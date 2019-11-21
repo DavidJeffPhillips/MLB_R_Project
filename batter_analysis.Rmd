@@ -1,0 +1,72 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Cmd+Shift+Enter*. 
+
+```{r}
+library(dplyr)
+library(readr)
+library(ggplot2)
+batter_data <- read_csv('batter_data.csv')
+head(batter_data)
+```
+```{r}
+batter_old <- batter_data %>%
+  filter(age>=32)
+batter_old$PA = as.numeric(batter_old$PA)
+batter_old$OPS_plus = as.numeric(batter_old$OPS_plus)
+batter_old <- batter_old %>%
+  filter(PA>250) %>%
+  filter(pitcher=='N') %>%
+  filter(year_ID>1950) %>%
+  select(name_common, mlb_ID, PA, OPS_plus, age)
+batter_old_mean <- batter_old %>%
+  group_by(mlb_ID) %>%
+  summarize(PA_mean_old=mean(PA), OPS_plus_mean_old=mean(OPS_plus))
+head(batter_old)
+head(batter_old_mean)
+```
+```{r}
+batter_young <- batter_data %>%
+  filter(age<32)
+batter_young$PA = as.numeric(batter_young$PA)
+batter_young$OPS_plus = as.numeric(batter_young$OPS_plus)
+batter_young <- batter_young %>%
+  filter(PA>250) %>%
+  filter(pitcher=='N') %>%
+  filter(year_ID>1950) %>%
+  select(name_common, mlb_ID, PA, OPS_plus, age)
+batter_young_mean <- batter_young %>%
+  group_by(mlb_ID) %>%
+  summarize(PA_mean_young=mean(PA), OPS_plus_mean_young=mean(OPS_plus))
+head(batter_young)
+head(batter_young_mean)
+```
+```{r}
+batter_combined <- batter_data %>%
+  merge(batter_young_mean, type='inner') %>%
+  merge(batter_old_mean, type='inner') %>%
+  group_by(mlb_ID) %>%
+  summarize(PA_mean_young=mean(PA_mean_young), OPS_plus_mean_young=mean(OPS_plus_mean_young), PA_mean_old=mean(PA_mean_old), OPS_plus_mean_old=mean(OPS_plus_mean_old))
+batter_combined
+```
+```{r}
+selection <- batter_combined %>%
+  filter(OPS_plus_mean_old>OPS_plus_mean_young)
+selection
+ID_list <- selection$mlb_ID
+```
+```{r}
+selection_full <- batter_data[batter_data$mlb_ID %in% ID_list,]
+selection_full
+```
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Cmd+Option+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Cmd+Shift+K* to preview the HTML file). 
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
